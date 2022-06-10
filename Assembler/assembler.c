@@ -7,7 +7,6 @@
 #define MAXLINELENGTH 1000
 
 typedef struct LinkedList* LabelList;
-
 struct LinkedList{
     char name[7];
     int address;
@@ -18,6 +17,10 @@ void insert(LabelList labels, char* k, int v);
 int find(LabelList labels, char* k);
 int addressCount;
 int convertNum(int num);
+int readAndParse(FILE *, char *, char *, char *, char *, char *);
+int isNumber(char *);
+int validReg1to7(int reg);
+int validReg0to7(int reg);
 
 LabelList create(){
     LabelList new = (LabelList) malloc(sizeof (struct LinkedList));
@@ -40,7 +43,6 @@ void insert(LabelList labels,char *k,int v){
     new->next = NULL;
     current->next = new;
 }
-
 int find(LabelList labels, char *k){
     LabelList current;
     for(current = labels; current; current = current->next){
@@ -49,13 +51,12 @@ int find(LabelList labels, char *k){
     }
     return -1;
 }
-
 int convertNum(int num){
     if (num < -32768){
         printf("error : invalid offset field (%d)\n",num);
         printf("error line : %d", addressCount);
         return 1;
-;    }
+        ;    }
     if (num > 32767){
         printf("error : invalid offset field (%d)\n",num);
         printf("error line : %d", addressCount);
@@ -66,11 +67,17 @@ int convertNum(int num){
     }
     return num;
 }
+int validReg1to7(int reg){
+    if(reg > 0 && reg < 8)
+        return 1;
+    return 0;
+}
+int validReg0to7(int reg){
+    if(reg >= 0 && reg < 8)
+        return 1;
+    return 0;
+}
 
-
-
-int readAndParse(FILE *, char *, char *, char *, char *, char *);
-int isNumber(char *);
 int main(int argc, char *argv[]) {
     char *inFileString, *outFileString;
     FILE *inFilePtr, *outFilePtr;
@@ -93,8 +100,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* here is an example for how to use readAndParse to read a line from
-    inFilePtr */
     LabelList labelDictionary = create();
     addressCount = 0;
     while (1) {
@@ -122,9 +127,7 @@ int main(int argc, char *argv[]) {
     /* this is how to rewind the file ptr so that you start reading from the
     beginning of the file */
     rewind(inFilePtr);
-    /* after doing a readAndParse, you may want to do the following to test the
-    opcode */
-    int instruction, resA, resB, destRegOrOffset;
+    int instruction, regA, regB, destRegOrOffset;
     addressCount = 0;
     while (1) {
         if (!readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
@@ -133,25 +136,27 @@ int main(int argc, char *argv[]) {
         }
         instruction = 0;
         if (!strcmp(opcode, "add")) {
-            /* do whatever you need to do for opcode "add" */
             if (isNumber(arg0)) {
-                sscanf(arg0, "%d", &resA);
-
-                resA = resA << 19;
-                instruction += resA;
-            }
-            if (isNumber(arg1)) {
-                sscanf(arg1, "%d", &resB);
-                if(resB < 0 || resB >= 8){
-                    printf("error : invalid register number (resB : %d)\n",resB);
+                sscanf(arg0, "%d", &regA);
+                if(!validReg0to7(regA)){
+                    printf("error : invalid register number (regA : %d)\n",regA);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resB = resB << 16;
-                instruction += resB;
+                regA = regA << 19;
+                instruction += regA;
+            }
+            if (isNumber(arg1)) {
+                sscanf(arg1, "%d", &regB);
+                if(!validReg0to7(regB)){
+                    printf("error : invalid register number (regB : %d)\n",regB);
+                    printf("error line : %d\n",addressCount); return 1;
+                }
+                regB = regB << 16;
+                instruction += regB;
             }
             if(isNumber(arg2)){
                 sscanf(arg2,"%d",&destRegOrOffset);
-                if(destRegOrOffset <= 0 || destRegOrOffset >= 8){
+                if(!validReg1to7(destRegOrOffset)){
                     printf("error : invalid register number (destRes : %d)\n",destRegOrOffset);
                     printf("error line : %d\n",addressCount); return 1;
                 }
@@ -159,29 +164,27 @@ int main(int argc, char *argv[]) {
             }
         }
         else if (!strcmp(opcode, "nor")) {
-            /* do whatever you need to do for opcode "add" */
             if (isNumber(arg0)) {
-                sscanf(arg0, "%d", &resA);
-                if(resA < 0 || resA >= 8){
-                    printf("error : invalid register number (resA : %d)\n",resA);
+                sscanf(arg0, "%d", &regA);
+                if(!validReg0to7(regA)){
+                    printf("error : invalid register number (regA : %d)\n",regA);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resA = resA << 19;
-                instruction += resA;
+                regA = regA << 19;
+                instruction += regA;
             }
             if (isNumber(arg1)) {
-                sscanf(arg1, "%d", &resB);
-                if(resB < 0 || resB >= 8){
-                    printf("error : invalid register number (resB : %d)\n",resB);
+                sscanf(arg1, "%d", &regB);
+                if(!validReg0to7(regB)){
+                    printf("error : invalid register number (regB : %d)\n",regB);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resB = resB << 16;
-                instruction += resB;
+                regB = regB << 16;
+                instruction += regB;
             }
             if(isNumber(arg2)){
-
                 sscanf(arg2,"%d",&destRegOrOffset);
-                if(destRegOrOffset <= 0 || destRegOrOffset >= 8){
+                if(!validReg1to7(destRegOrOffset)){
                     printf("error : invalid register number (destRes : %d)\n",destRegOrOffset);
                     printf("error line : %d\n",addressCount); return 1;
                 }
@@ -190,24 +193,23 @@ int main(int argc, char *argv[]) {
             instruction += 1 << 22;
         }
         else if (!strcmp(opcode, "lw")) {
-            /* do whatever you need to do for opcode "add" */
             if (isNumber(arg0)) {
-                sscanf(arg0, "%d", &resA);
-                if(resA < 0 || resA >= 8){
-                    printf("error : invalid register number (resA : %d)\n",resA);
+                sscanf(arg0, "%d", &regA);
+                if(!validReg0to7(regA)){
+                    printf("error : invalid register number (regA : %d)\n",regA);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resA = resA << 19;
-                instruction += resA;
+                regA = regA << 19;
+                instruction += regA;
             }
             if (isNumber(arg1)) {
-                sscanf(arg1, "%d", &resB);
-                if(resB <= 0 || resB >= 8){
-                    printf("error : invalid register number (resB : %d)\n",resB);
+                sscanf(arg1, "%d", &regB);
+                if(!validReg1to7(regB)){
+                    printf("error : invalid register number (regB : %d)\n",regB);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resB = resB << 16;
-                instruction += resB;
+                regB = regB << 16;
+                instruction += regB;
             }
             if(isNumber(arg2))
                 sscanf(arg2,"%d",&destRegOrOffset);
@@ -221,24 +223,23 @@ int main(int argc, char *argv[]) {
             instruction += 2 << 22;
         }
         else if (!strcmp(opcode, "sw")) {
-            /* do whatever you need to do for opcode "add" */
             if (isNumber(arg0)) {
-                sscanf(arg0, "%d", &resA);
-                if(resA < 0 || resA >= 8){
-                    printf("error : invalid register number (resA : %d)\n",resA);
+                sscanf(arg0, "%d", &regA);
+                if(!validReg0to7(regA)){
+                    printf("error : invalid register number (regA : %d)\n",regA);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resA = resA << 19;
-                instruction += resA;
+                regA = regA << 19;
+                instruction += regA;
             }
             if (isNumber(arg1)) {
-                sscanf(arg1, "%d", &resB);
-                if(resB < 0 || resB >= 8){
-                    printf("error : invalid register number (resB : %d)\n",resB);
+                sscanf(arg1, "%d", &regB);
+                if(!validReg0to7(regB)){
+                    printf("error : invalid register number (regB : %d)\n",regB);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resB = resB << 16;
-                instruction += resB;
+                regB = regB << 16;
+                instruction += regB;
             }
             if(isNumber(arg2))
                 sscanf(arg2,"%d",&destRegOrOffset);
@@ -252,24 +253,23 @@ int main(int argc, char *argv[]) {
             instruction += 3 << 22;
         }
         else if (!strcmp(opcode, "beq")) {
-            /* do whatever you need to do for opcode "add" */
             if (isNumber(arg0)) {
-                sscanf(arg0, "%d", &resA);
-                if(resA < 0 || resA >= 8){
-                    printf("error : invalid register number (resA : %d)\n",resA);
+                sscanf(arg0, "%d", &regA);
+                if(!validReg0to7(regA)){
+                    printf("error : invalid register number (regA : %d)\n",regA);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resA = resA << 19;
-                instruction += resA;
+                regA = regA << 19;
+                instruction += regA;
             }
             if (isNumber(arg1)) {
-                sscanf(arg1, "%d", &resB);
-                if(resB < 0 || resB >= 8){
-                    printf("error : invalid register number (resB : %d)\n",resB);
+                sscanf(arg1, "%d", &regB);
+                if(!validReg0to7(regB)){
+                    printf("error : invalid register number (regB : %d)\n",regB);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resB = resB << 16;
-                instruction += resB;
+                regB = regB << 16;
+                instruction += regB;
             }
             if(isNumber(arg2))
                 sscanf(arg2,"%d",&destRegOrOffset);
@@ -283,24 +283,23 @@ int main(int argc, char *argv[]) {
             instruction += 4 << 22;
         }
         else if (!strcmp(opcode, "jalr")) {
-            /* do whatever you need to do for opcode "add" */
             if (isNumber(arg0)) {
-                sscanf(arg0, "%d", &resA);
-                if(resA < 0 || resA >= 8){
-                    printf("error : invalid register number (resA : %d)\n",resA);
+                sscanf(arg0, "%d", &regA);
+                if(!validReg0to7(regA)){
+                    printf("error : invalid register number (regA : %d)\n",regA);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resA = resA << 19;
-                instruction += resA;
+                regA = regA << 19;
+                instruction += regA;
             }
             if (isNumber(arg1)) {
-                sscanf(arg1, "%d", &resB);
-                if(resB < 0 || resB >= 8){
-                    printf("error : invalid register number (resB : %d)\n",resB);
+                sscanf(arg1, "%d", &regB);
+                if(!validReg1to7(regB)){
+                    printf("error : invalid register number (regB : %d)\n",regB);
                     printf("error line : %d\n",addressCount); return 1;
                 }
-                resB = resB << 16;
-                instruction += resB;
+                regB = regB << 16;
+                instruction += regB;
             }
             instruction += 5 << 22;
         }
@@ -312,15 +311,15 @@ int main(int argc, char *argv[]) {
         }
         else if (!strcmp(opcode,".fill")){
             if(isNumber(arg0))
-                sscanf(arg0, "%d", &resA);
+                sscanf(arg0, "%d", &regA);
             else if(find(labelDictionary,arg0) != -1)
-                resA = find(labelDictionary,arg0);
+                regA = find(labelDictionary,arg0);
             else {
                 printf("error: invalid label\n");
                 printf("%s",arg0);
                 printf("error line : %d\n",addressCount); return 1;
             }
-            instruction += resA;
+            instruction += regA;
         }
         else {
             printf("error: unrecognized opcode\n" );
