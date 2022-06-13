@@ -113,6 +113,9 @@ int simulateInstruction(stateType* currentState){
             return 0;
         case 7:
             break;
+        default:
+            printf("error : invalid opcode (opcode : %#x)\n", opcode);
+            exit(1);
     }
     instructionCount++;
     currentState->pc++;
