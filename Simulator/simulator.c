@@ -120,7 +120,7 @@ int simulateInstruction(stateType* currentState){
 }
 
 void getInstruction(int instruction){
-    opcode = instruction & (0b111 << 22);
+    opcode = instruction & (0b1111111111 << 22);
     opcode >>= 22;
     arg0 = instruction & (0b111 << 19);
     arg0 >>= 19;
